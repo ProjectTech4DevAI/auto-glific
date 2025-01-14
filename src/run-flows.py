@@ -35,8 +35,11 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
 '''
 
     def __init__(self, config):
-        self.config = config
+        self.config = config['GLIFIC']
         self.token = None
+
+        keys = ('connection_timeout', 'read_timeout')
+        self.timeout = tuple(config.getint('DEFAULT', x) for x in keys)
 
         self.variables = {
             'defaultResults': '{}',
@@ -59,7 +62,7 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
                     'query': self._query,
                     'variables': self.variables,
                 },
-                timeout=120,
+                timeout=self.timeout,
             )
             try:
                 response.raise_for_status()
@@ -91,7 +94,7 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
                 .get('data')
                 .get('access_token'))
 
-class GoogleSheetsIterator:
+class GoogleSheetIterator:
     _min_poll_time = 1e-2
     _target = 'target'
 
@@ -134,8 +137,8 @@ if __name__ == "__main__":
     config = ConfigParser()
     config.read_file(sys.stdin)
 
-    glific = GlificFlowCaller(config['GLIFIC'])
-    google = GoogleSheetsIterator(config)
+    glific = GlificFlowCaller(config)
+    google = GoogleSheetIterator(config)
 
     for g in google:
         Logger.info(g)
