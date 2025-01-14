@@ -129,11 +129,11 @@ if __name__ == "__main__":
 
     glific = GlificHelper(config['GLIFIC'])
     if args.glific_token is None:
-        token = glific.auth(glific)
+        token = glific.auth()
     else:
         token = args.glific_token
 
-    google = GoogleHelper(config['GOOGLE'])
+    google = GoogleHelper(config)
     for i in google:
         logging.warning(i)
         glific.run(token)
