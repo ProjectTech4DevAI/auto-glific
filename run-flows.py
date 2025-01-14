@@ -114,7 +114,7 @@ class GoogleHelper(Helper):
                 before = after
                 stime = 0
             else:
-                raise ValueError(f'Inconsistent increment {before} {after}')
+                raise ValueError(f'Invalid increment: {before} -> {after}')
 
 #
 #
