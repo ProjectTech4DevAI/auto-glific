@@ -95,7 +95,7 @@ class GoogleSheetsIterator:
 
     @property
     def complete(self):
-        return self.rows(self.config['sheet_tab_target'])
+        return self.rows('target')
 
     def __init__(self, config):
         self.max_poll_time = config.getint('DEFAULT', 'max_poll_time')
@@ -103,10 +103,11 @@ class GoogleSheetsIterator:
 
         args = map(self.config.get, ('sheet_id', 'api_key'))
         self.sheet = SheetManager(*args)
-        self.target = self.rows(self.config['sheet_tab_source'])
+        self.target = self.rows('source')
 
     def rows(self, tab):
-        df = pd.read_csv(self.sheet.get(tab))
+        key = f'sheet_tab_{tab}'
+        df = pd.read_csv(self.sheet.get(self.config[key]))
         return len(df)
 
     def sleep(self):
