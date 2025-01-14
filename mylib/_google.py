@@ -60,7 +60,12 @@ class SheetManager:
         self.locator = SheetLocation(self.sheet_id)
 
     def __iter__(self):
-        service = build('sheets', 'v4', developerKey=self.token)
+        service = build(
+            'sheets',
+            'v4',
+            developerKey=self.token,
+            cache_discovery=False,
+        )
         gsheet = (service
                   .spreadsheets()
                   .get(spreadsheetId=self.sheet_id)
