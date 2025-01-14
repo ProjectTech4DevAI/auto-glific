@@ -135,5 +135,5 @@ if __name__ == "__main__":
 
     google = GoogleHelper(config)
     for i in google:
-        logging.warning(i)
+        Logger.info(i)
         glific.run(token)
