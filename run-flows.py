@@ -22,11 +22,8 @@ class Status:
 #
 #
 #
-class Helper:
-    def __init__(self, config):
-        self.config = config
-
-class GlificHelper(Helper):
+class GlificFlowCaller:
+    _attempts = 3
     _query = '''
 mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) {
   startContactFlow(flowId: $flowId, contactId: $contactId, defaultResults: $defaultResults) {
@@ -38,6 +35,41 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
   }
 }
 '''
+
+    def __init__(self, config):
+        self.config = config
+        self.token = None
+
+        self.variables = {
+            'defaultResults': '{}',
+        }
+        iterable = zip(('flowId', 'contactId'), ('flow_id', 'contact_id'))
+        self.variables.update((x, self.config[y]) for (x, y) in iterable)
+
+    def __call__(self):
+        if self.token is None:
+            self.token = self.auth()
+
+        for _ in range(self._attempts):
+            response = requests.post(
+                'https://api.prod.glific.com/api',
+                headers={
+                    'Content-Type': 'application/json',
+                    'authorization': self.token,
+                },
+                json={
+                    'query': self._query,
+                    'variables': self.variables,
+                },
+            )
+            try:
+                response.raise_for_status()
+                break
+            except requests.HTTPError:
+                if response.status_code == 401:
+                    self.token = self.auth()
+        else:
+            raise ConnectionError()
 
     def auth(self):
         user = { x: self.config[x] for x in ('phone', 'password') }
@@ -59,25 +91,7 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
                 .get('data')
                 .get('access_token'))
 
-    def run(self, token):
-        response = requests.post(
-            'https://api.prod.glific.com/api',
-            headers={
-                'Content-Type': 'application/json',
-                'authorization': token,
-            },
-            json={
-                'query': self._query,
-                'variables': {
-                    'flowId': self.config['flow_id'],
-                    'contactId': self.config['contact_id'],
-                    'defaultResults': '{}',
-                },
-            }
-        )
-        response.raise_for_status()
-
-class GoogleHelper(Helper):
+class GoogleSheetsIterator:
     _min_poll_time = 1e-2
 
     @property
@@ -85,10 +99,8 @@ class GoogleHelper(Helper):
         return self.rows(self.config['sheet_tab_target'])
 
     def __init__(self, config):
-        super().__init__(config)
-
-        self.max_poll_time = self.config.getint('DEFAULT', 'max_poll_time')
-        self.config = self.config['GOOGLE']
+        self.max_poll_time = config.getint('DEFAULT', 'max_poll_time')
+        self.config = config['GOOGLE']
 
         args = map(self.config.get, ('sheet_id', 'api_key'))
         self.sheet = SheetManager(*args)
@@ -122,22 +134,12 @@ class GoogleHelper(Helper):
 #
 #
 if __name__ == "__main__":
-    arguments = ArgumentParser()
-    arguments.add_argument('--glific-token')
-    args = arguments.parse_args()
-
     config = ConfigParser()
     config.read_file(sys.stdin)
 
-    glific = GlificHelper(config['GLIFIC'])
-    if args.glific_token is None:
-        token = glific.auth()
-        Logger.critical(token)
-    else:
-        token = args.glific_token
-    assert token
+    glific = GlificFlowCaller(config['GLIFIC'])
+    google = GoogleSheetsIterator(config)
 
-    google = GoogleHelper(config)
-    for i in google:
-        Logger.info(i)
-        glific.run(token)
+    for g in google:
+        Logger.info(g)
+        glific()
