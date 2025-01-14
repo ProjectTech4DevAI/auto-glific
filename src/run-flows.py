@@ -66,9 +66,10 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
                 break
             except requests.HTTPError:
                 if response.status_code == 401:
+                    Logger.warning('Token expired')
                     self.token = self.auth()
             except requests.ConnectTimeout:
-                pass
+                Logger.warning('Connection timeout')
 
     def auth(self):
         user = { x: self.config[x] for x in ('phone', 'password') }
