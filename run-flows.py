@@ -66,7 +66,7 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
                 'authorization': token,
             },
             json={
-                'query': query,
+                'query': self._query,
                 'variables': {
                     'flowId': self.config['flow_id'],
                     'contactId': self.config['contact_id'],
