@@ -1,4 +1,5 @@
 import sys
+import random
 import logging
 from dataclasses import dataclass
 from argparse import ArgumentParser
@@ -75,6 +76,8 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
         response.raise_for_status()
 
 class GoogleHelper(Helper):
+    _min_poll_time = 1e-2
+
     @property
     def complete(self):
         return self.rows(self.config['sheet_tab_target'])
@@ -82,7 +85,7 @@ class GoogleHelper(Helper):
     def __init__(self, config):
         super().__init__(config)
 
-        self.wait = self.config.getint('DEFAULT', 'poll_time')
+        self.max_poll_time = self.config.getint('DEFAULT', 'max_poll_time')
         self.config = self.config['GOOGLE']
 
         args = map(self.config.get, ('sheet_id', 'api_key'))
@@ -93,19 +96,23 @@ class GoogleHelper(Helper):
         df = pd.read_csv(self.sheet.get(tab))
         return len(df)
 
+    def sleep(self):
+        tm = random.uniform(self._min_poll_time, self.max_poll_time)
+        time.sleep(tm)
+        return tm
+
     def __iter__(self):
-        wait = 0
+        stime = 0
         before = self.complete
 
         while before != self.target:
             after = self.complete
             if after == before:
-                time.sleep(self.wait)
-                wait += self.wait
+                stime += self.sleep()
             elif after > before:
-                yield Status(after, wait)
+                yield Status(after, stime)
                 before = after
-                wait = 0
+                stime = 0
             else:
                 raise ValueError(f'Inconsistent increment {before} {after}')
 
