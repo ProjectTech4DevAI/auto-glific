@@ -22,7 +22,6 @@ class Status:
 #
 #
 class GlificFlowCaller:
-    _attempts = 3
     _query = '''
 mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) {
   startContactFlow(flowId: $flowId, contactId: $contactId, defaultResults: $defaultResults) {
@@ -49,7 +48,7 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
         if self.token is None:
             self.token = self.auth()
 
-        for _ in range(self._attempts):
+        while True:
             response = requests.post(
                 'https://api.prod.glific.com/api',
                 headers={
@@ -60,6 +59,7 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
                     'query': self._query,
                     'variables': self.variables,
                 },
+                timeout=120,
             )
             try:
                 response.raise_for_status()
@@ -67,8 +67,8 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
             except requests.HTTPError:
                 if response.status_code == 401:
                     self.token = self.auth()
-        else:
-            raise ConnectionError()
+            except requests.ConnectTimeout:
+                pass
 
     def auth(self):
         user = { x: self.config[x] for x in ('phone', 'password') }
