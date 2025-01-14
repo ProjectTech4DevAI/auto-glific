@@ -26,6 +26,18 @@ class Helper:
         self.config = config
 
 class GlificHelper(Helper):
+    _query = '''
+mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) {
+  startContactFlow(flowId: $flowId, contactId: $contactId, defaultResults: $defaultResults) {
+    success
+    errors {
+        key
+        message
+    }
+  }
+}
+'''
+
     def auth(self):
         user = { x: self.config[x] for x in ('phone', 'password') }
 
@@ -43,21 +55,10 @@ class GlificHelper(Helper):
 
         return (response
                 .json()
+                .get('data')
                 .get('access_token'))
 
     def run(self, token):
-        query = '''
-mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) {
-  startContactFlow(flowId: $flowId, contactId: $contactId, defaultResults: $defaultResults) {
-    success
-    errors {
-        key
-        message
-    }
-  }
-}
-'''
-
         response = requests.post(
             'https://api.prod.glific.com/api',
             headers={
