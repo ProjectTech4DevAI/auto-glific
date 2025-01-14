@@ -1,5 +1,6 @@
 import sys
 import time
+import math
 import random
 from argparse import ArgumentParser
 from dataclasses import dataclass
@@ -103,17 +104,17 @@ class GoogleHelper(Helper):
         return tm
 
     def __iter__(self):
-        stime = 0
+        stime = math.nan
         before = self.complete
 
         while before != self.target:
             after = self.complete
-            if after == before:
-                stime += self.sleep()
-            elif after > before:
+            if after > before or math.isnan(stime):
                 yield Status(after, stime)
                 before = after
                 stime = 0
+            elif after == before:
+                stime += self.sleep()
             else:
                 raise ValueError(f'Invalid increment: {before} -> {after}')
 
