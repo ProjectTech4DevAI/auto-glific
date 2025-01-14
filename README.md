@@ -61,9 +61,19 @@ contact_id:
 Assuming your configuration file is called `config.ini`:
 
 ```bash
-$> python run-flows.py < config.ini
+$> python src/run-flows.py < config.ini
 ```
 
-If you already have a Glific authentication token, you can forgo the
-authentication step by providing the token at the command line. Use
-the `--glific-token` to use this feature.
+### Assess
+
+Results can be downloaded and reviewed as an ECDF plot:
+
+```bash
+python src/parse-times.py < config.ini \
+   | python src/plot-times.py --output results.png
+```
+
+* By just using `src/parse-times.py` you can view raw results.
+* Call durations often have a long tail. Consider cutting off the
+  graph at a reasonable duration to better view the distribution:
+  using `--cutoff 30` with `src/plot-times.py`, for example.
