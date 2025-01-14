@@ -92,18 +92,14 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
 
 class GoogleSheetsIterator:
     _min_poll_time = 1e-2
-
-    @property
-    def complete(self):
-        return self.rows('target')
+    _target = 'target'
 
     def __init__(self, config):
-        self.max_poll_time = config.getint('DEFAULT', 'max_poll_time')
         self.config = config['GOOGLE']
+        self.max_poll_time = config.getint('DEFAULT', 'max_poll_time')
 
         args = map(self.config.get, ('sheet_id', 'api_key'))
         self.sheet = SheetManager(*args)
-        self.target = self.rows('source')
 
     def rows(self, tab):
         key = f'sheet_tab_{tab}'
@@ -117,10 +113,10 @@ class GoogleSheetsIterator:
 
     def __iter__(self):
         stime = math.nan
-        before = self.complete
+        (before, stop) = map(self.rows, (self._target, 'source'))
 
-        while before != self.target:
-            after = self.complete
+        while before < stop:
+            after = self.rows(self._target)
             if after > before or math.isnan(stime):
                 yield Status(after, stime)
                 before = after
