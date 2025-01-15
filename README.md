@@ -39,6 +39,7 @@ INI file with the following structure:
 ```
 [DEFAULT]
 
+min_poll_time: 0.5
 max_poll_time: 2
 connection_timeout: 10
 read_timeout: 90

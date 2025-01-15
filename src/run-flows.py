@@ -95,12 +95,13 @@ mutation startContactFlow($flowId: ID!, $contactId: ID! $defaultResults: Json!) 
                 .get('access_token'))
 
 class GoogleSheetIterator:
-    _min_poll_time = 1e-2
     _target = 'target'
 
     def __init__(self, config):
         self.config = config['GOOGLE']
-        self.max_poll_time = config.getint('DEFAULT', 'max_poll_time')
+
+        keys = ('min_poll_time', 'max_poll_time')
+        self.poll_time = tuple(config.getfloat('DEFAULT', x) for x in keys)
 
         args = map(self.config.get, ('sheet_id', 'api_key'))
         self.sheet = SheetManager(*args)
@@ -111,7 +112,7 @@ class GoogleSheetIterator:
         return len(df)
 
     def sleep(self):
-        tm = random.uniform(self._min_poll_time, self.max_poll_time)
+        tm = random.uniform(*self.poll_time)
         time.sleep(tm)
         return tm
 
