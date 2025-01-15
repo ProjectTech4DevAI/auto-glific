@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 
 if __name__ == "__main__":
     arguments = ArgumentParser()
@@ -14,21 +15,24 @@ if __name__ == "__main__":
 
     x = 'duration'
     df = pd.read_csv(sys.stdin)
-    sns.ecdfplot(x=x, data=df)
+    ax = sns.ecdfplot(x=x, data=df)
 
-    plt.grid(
-        visible=True,
-        axis='both',
-        alpha=0.25,
-    )
-    plt.xlabel('Duration (sec)')
-    plt.axvline(
+    ax.set_xlabel('Duration (sec)')
+
+    ax.grid(axis='both', which='major', alpha=0.3)
+    ax.grid(axis='y', which='minor', alpha=0.25, linestyle='dotted')
+
+    ax.xaxis.set_major_locator(MultipleLocator(base=2))
+    ax.yaxis.set_major_locator(MultipleLocator(base=0.1))
+    ax.yaxis.set_minor_locator(AutoMinorLocator())
+
+    ax.axvline(
         x=df[x].mean(),
         linestyle='dashed',
         color='red',
         alpha=0.3,
     )
     if args.cutoff is not None:
-        plt.xlim(0, args.cutoff)
+        ax.set_xlim(0, args.cutoff)
 
     plt.savefig(args.output, bbox_inches='tight')
