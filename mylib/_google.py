@@ -60,9 +60,16 @@ class SheetManager:
 
     def __init__(self, sheet_id, token=None):
         self.sheet_id = sheet_id
-        self.token = token or os.environ.get('GOOGLE_API_KEY')
-        assert self.token
 
+        if token is None:
+            token = os.environ.get('GOOGLE_API_KEY')
+        service = build(
+            'sheets',
+            'v4',
+            developerKey=token,
+            cache_discovery=False,
+        )
+        self.service = service.spreadsheets()
         self.locator = SheetLocation(self.sheet_id)
 
     def __iter__(self):
@@ -72,19 +79,9 @@ class SheetManager:
 
     def __call__(self):
         backoff = self._backoff
-        service = build(
-            'sheets',
-            'v4',
-            developerKey=self.token,
-            cache_discovery=False,
-        )
-
         for i in it.count():
             try:
-                return (service
-                        .spreadsheets()
-                        .get(spreadsheetId=self.sheet_id)
-                        .execute())
+                return self.service.get(spreadsheetId=self.sheet_id).execute()
             except HttpError as err:
                 warnings.warn(f'[{i}]: {err} ({backoff})')
             time.sleep(backoff)
