@@ -1,8 +1,12 @@
 import os
+import time
+import warnings
+import itertools as it
 import functools as ft
 from pathlib import Path
 from urllib.parse import ParseResult, urlunparse
 
+from googleapiclient.errors import HttpError
 from googleapiclient.discovery import build
 
 #
@@ -52,6 +56,8 @@ class SheetLocation:
 #
 #
 class SheetManager:
+    _backoff = 2
+
     def __init__(self, sheet_id, token=None):
         self.sheet_id = sheet_id
         self.token = token or os.environ.get('GOOGLE_API_KEY')
@@ -60,19 +66,29 @@ class SheetManager:
         self.locator = SheetLocation(self.sheet_id)
 
     def __iter__(self):
+        gsheet = self()
+        assert self.sheet_id == gsheet['spreadsheetId']
+        yield from (x.get('properties') for x in gsheet.get('sheets'))
+
+    def __call__(self):
+        backoff = self._backoff
         service = build(
             'sheets',
             'v4',
             developerKey=self.token,
             cache_discovery=False,
         )
-        gsheet = (service
-                  .spreadsheets()
-                  .get(spreadsheetId=self.sheet_id)
-                  .execute())
-        assert self.sheet_id == gsheet['spreadsheetId']
 
-        yield from (x.get('properties') for x in gsheet.get('sheets'))
+        for i in it.count():
+            try:
+                return (service
+                        .spreadsheets()
+                        .get(spreadsheetId=self.sheet_id)
+                        .execute())
+            except HttpError as err:
+                warnings.warn(f'[{i}]: {err} ({backoff})')
+            time.sleep(backoff)
+            backoff **= 2
 
     def get(self, sheet_tab):
         for s in self:
