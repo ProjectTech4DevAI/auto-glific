@@ -6,52 +6,42 @@ import pandas as pd
 
 from mylib import SheetManager
 
-#
-#
-#
-@dataclass
-class Experiment:
-    sequence: int
-    duration: float
+def duration(start, end):
+    def calculate(x):
+        return (x[end]
+                .sub(x[start])
+                .apply(lambda y: y.total_seconds()))
 
-#
-#
-#
-def gather(config):
-    args = map(config.get, ('sheet_id', 'api_key'))
+    return calculate
+
+if __name__ == "__main__":
+    config = ConfigParser()
+    config.read_file(sys.stdin)
+
+    google = config['GOOGLE']
+    args = map(google.get, ('sheet_id', 'api_key'))
     sheet = SheetManager(*args)
-    data = sheet.get(config['sheet_tab_target'])
 
+    (start, middle, end) = ('start', 'middle', 'end')
     columns = {
-        'Question Asked Time ': 'start',
- 	'Answer Shared Time': 'end',
+        'Question Time': start,
+        'Answer Shared Time': middle,
+        'Summarized Answer Shared Time': end,
     }
 
+    data = sheet.get(google['sheet_tab_target'])
     df = (pd
           .read_csv(
               data,
               usecols=columns,
               parse_dates=list(columns),
-              date_format='%I:%M:%S %p',
           )
-          .rename(columns=columns))
-    a_day = pd.Timedelta(1, 'day')
-    for i in df.itertuples():
-        end = i.end
-        if end < i.start:
-            end += a_day
-        diff = end - i.start
-        duration = diff.total_seconds()
-
-        yield Experiment(i.Index + 1, duration)
-
-#
-#
-#
-if __name__ == "__main__":
-    config = ConfigParser()
-    config.read_file(sys.stdin)
-
-    records = map(asdict, gather(config['GOOGLE']))
-    df = pd.DataFrame.from_records(records)
+          .rename(columns=columns)
+          .assign(
+              full=duration(start, middle),
+              summary=duration(middle, end),
+              total=lambda x: x['full'].add(x['summary']),
+          )
+          .drop(columns=[start, middle, end])
+          .melt(var_name='response', value_name='seconds'))
     df.to_csv(sys.stdout, index=False)
