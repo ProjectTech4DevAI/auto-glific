@@ -1,4 +1,6 @@
 import sys
+import operator as op
+import itertools as it
 from pathlib import Path
 from argparse import ArgumentParser
 from dataclasses import dataclass
@@ -12,6 +14,22 @@ from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 class PlotLine:
     name: str
     color: tuple
+
+class LayoutManager:
+    def __init__(self, nrows):
+        self.nrows = nrows
+        (self.fig, self.axes) = plt.subplots(nrows=self.nrows, sharex=True)
+
+    def __iter__(self):
+        if self.nrows > 1:
+            yield from self.axes
+        else:
+            yield self.axes
+
+    def expand(self, width, height):
+        iterable = zip((width, height), self.fig.get_size_inches())
+        args = it.starmap(op.mul, iterable)
+        self.fig.set_size_inches(*args)
 
 def lines(ax):
     legend = ax.get_legend()
@@ -29,9 +47,8 @@ if __name__ == "__main__":
               .groupby('experiment', sort=False, dropna=False))
 
     nrows = groups.ngroups
-    (fig, axes) = plt.subplots(nrows=nrows, sharex=True)
-    (width, height) = fig.get_size_inches()
-    fig.set_size_inches(width * 1.2, height * nrows)
+    layout = LayoutManager(nrows)
+    layout.expand(1.2, nrows)
 
     first = 1
     hue = 'response'
@@ -39,8 +56,9 @@ if __name__ == "__main__":
         'x': 'seconds',
         'hue': hue,
     }
+
     sns.set_palette('colorblind')
-    for (i, (ax, (e, df))) in enumerate(zip(axes, groups), first):
+    for (i, (ax, (e, df))) in enumerate(zip(layout, groups), first):
         sns.ecdfplot(
             data=df,
             ax=ax,
