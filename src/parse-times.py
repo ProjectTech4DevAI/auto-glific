@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from argparse import ArgumentParser
 from dataclasses import dataclass, asdict
 
@@ -19,9 +20,14 @@ if __name__ == "__main__":
     arguments.add_argument('--sheet-id')
     arguments.add_argument('--result-tab')
     arguments.add_argument('--google-api-key')
+    arguments.add_argument('--data-file', type=Path)
     args = arguments.parse_args()
 
-    sheet = SheetManager(args.sheet_id, args.google_api_key)
+    if args.data_file:
+        data = args.data_file
+    else:
+        sheet = SheetManager(args.sheet_id, args.google_api_key)
+        data = sheet.get(args.result_tab)
 
     (start, middle, end) = ('start', 'middle', 'end')
     columns = {
@@ -30,7 +36,6 @@ if __name__ == "__main__":
         'Summarized Answer Shared Time': end,
     }
 
-    data = sheet.get(args.result_tab)
     df = (pd
           .read_csv(
               data,
