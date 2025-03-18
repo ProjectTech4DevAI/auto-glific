@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     groups = (pd
               .read_csv(sys.stdin)
-              .groupby('experiment', sort=False))
+              .groupby('experiment', sort=False, dropna=False))
 
     nrows = groups.ngroups
     (fig, axes) = plt.subplots(nrows=nrows, sharex=True)
