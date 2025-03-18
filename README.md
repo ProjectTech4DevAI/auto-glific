@@ -1,29 +1,25 @@
-
-
-## Run
-
-### Python setup
+## Python setup
 
 1. Ensure you have a proper Python environment. If you do not have the
    packages required in your default environment, consider creating a
    virtual one:
 
    ```bash
-   $> python -m venv venv
-   $> source venv/bin/activate
-   $> pip install -r requirements.txt
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
    ```
 
 2. Update your Python path
 
    ```bash
-   $> export PYTHONPATH=`git rev-parse --show-toplevel`:$PYTHONPATH
+   export PYTHONPATH=`git rev-parse --show-toplevel`:$PYTHONPATH
    ```
 
 3. (Optional) Set the Python log level:
 
    ```bash
-   $> export PYTHONLOGLEVEL=info
+   export PYTHONLOGLEVEL=info
    ```
 
    The default level is "warning", however most of the scripts produce
@@ -31,52 +27,51 @@
    logging
    module](https://docs.python.org/3/library/logging.html#logging-levels).
 
-### Configuration
+## Assess response times
 
-Configuration is specified via a Microsoft Windows INI file. Create an
-INI file with the following structure:
+### Parse raw data
 
+#### From Google
+
+Data can be parsed directly from a Google Sheet:
+```bash
+GOOGLE_API_KEY=... python src/parse-times.py \
+	--sheet-id GSHEET_ID \
+	--result-tab X > data.csv
 ```
-[DEFAULT]
+where:
+* `GOOGLE_API_KEY` is your Google Developer API key; this can also be
+  specified as an option to `parse-times.py` (`--google-api-key`).
+* `GSHEET_ID` is the Google Sheet ID
+* `X` is the tab containing the data
 
-min_poll_time: 0.5
-max_poll_time: 2
-connection_timeout: 10
-read_timeout: 90
+Note that `--result-tab` can be specified more than once to combine
+data potentially spread across tabs.
 
-[GOOGLE]
+#### From a local file
 
-sheet_id:
-sheet_tab_source: prompts
-sheet_tab_target: response
-api_key:
-
-[GLIFIC]
-
-phone:
-password:
-flow_id:
-contact_id:
+Data can also be parsed from a local CSV download of a Google Sheet:
+```bash
+python src/parse-times.py --data-file /path/to/data.csv > data.csv
 ```
 
-### Prompt
+In this case `--result-tab` is not required; however specifying which
+tab the CSV came from will make later plotting more readable.
 
-Assuming your configuration file is called `config.ini`:
+### Plot the results
 
 ```bash
-$> python src/run-flows.py < config.ini
+python src/plot-times.py --output results.png < data.csv
 ```
+where `data.csv` is the output of the data parsing script.
 
-### Assess
-
-Results can be downloaded and reviewed as an ECDF plot:
-
-```bash
-python src/parse-times.py < config.ini \
-   | python src/plot-times.py --output results.png
-```
-
-* By just using `src/parse-times.py` you can view raw results.
+Some things to keep in mind:
 * Call durations often have a long tail. Consider cutting off the
   graph at a reasonable duration to better view the distribution:
   using `--cutoff 30` with `src/plot-times.py`, for example.
+* The two steps -- parsing and then plotting -- have been presented
+  separately for clarity. They can also be piped together to
+  facilitate scripting:
+  ```bash
+  python src/parse-times.py ... | python src/plot-times.py ...
+  ```
