@@ -1,6 +1,6 @@
 import sys
+from argparse import ArgumentParser
 from dataclasses import dataclass, asdict
-from configparser import ConfigParser
 
 import pandas as pd
 
@@ -15,12 +15,13 @@ def duration(start, end):
     return calculate
 
 if __name__ == "__main__":
-    config = ConfigParser()
-    config.read_file(sys.stdin)
+    arguments = ArgumentParser()
+    arguments.add_argument('--sheet-id')
+    arguments.add_argument('--result-tab')
+    arguments.add_argument('--google-api-key')
+    args = arguments.parse_args()
 
-    google = config['GOOGLE']
-    args = map(google.get, ('sheet_id', 'api_key'))
-    sheet = SheetManager(*args)
+    sheet = SheetManager(args.sheet_id, args.google_api_key)
 
     (start, middle, end) = ('start', 'middle', 'end')
     columns = {
@@ -29,7 +30,7 @@ if __name__ == "__main__":
         'Summarized Answer Shared Time': end,
     }
 
-    data = sheet.get(google['sheet_tab_target'])
+    data = sheet.get(args.result_tab)
     df = (pd
           .read_csv(
               data,
