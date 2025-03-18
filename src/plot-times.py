@@ -10,6 +10,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 
+from mylib import Logger
+
 @dataclass
 class PlotLine:
     name: str
@@ -59,6 +61,8 @@ if __name__ == "__main__":
 
     sns.set_palette('colorblind')
     for (i, (ax, (e, df))) in enumerate(zip(layout, groups), first):
+        Logger.info(e)
+
         sns.ecdfplot(
             data=df,
             ax=ax,

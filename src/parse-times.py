@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from mylib import SheetManager
+from mylib import Logger, SheetManager
 
 #
 #
@@ -21,6 +21,7 @@ class DataReader:
 
     def __call__(self):
         for t in self.tabs:
+            Logger.info(t)
             yield (pd
                    .read_csv(self.gather(t),
                              usecols=self.columns,
