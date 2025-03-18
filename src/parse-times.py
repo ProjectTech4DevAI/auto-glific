@@ -70,12 +70,17 @@ if __name__ == "__main__":
     arguments.add_argument('--data-file', type=Path)
     args = arguments.parse_args()
 
+    # setup
+
+    tabs = []
+
     (start, middle, end) = ('start', 'middle', 'end')
     columns = {
         'Question Time': start,
         'Answer Shared Time': middle,
         'Summarized Answer Shared Time': end,
     }
+
     (full, summary) = ('full', 'summary')
     timings = cl.OrderedDict([
         (full, DurationCalculator(start, middle)),
@@ -83,14 +88,20 @@ if __name__ == "__main__":
         ('total', lambda x: x[full].add(x[summary])),
     ])
 
+    # read
     if args.data_file:
         MyReader = ft.partial(LocalDataReader, path=args.data_file)
     else:
         MyReader = ft.partial(RemoteDataReader,
                               sheet=args.sheet_id,
                               key=args.google_api_key)
-    reader = MyReader(tabs=args.result_tab, columns=list(columns))
+    if args.result_tab is None:
+        tabs.append(pd.NA)
+    else:
+        tabs.extend(args.result_tab)
+    reader = MyReader(tabs=tabs, columns=list(columns))
 
+    # process
     df = (pd
           .concat(reader())
           .rename(columns=columns)
