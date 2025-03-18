@@ -24,41 +24,65 @@ if __name__ == "__main__":
     arguments.add_argument('--output', type=Path)
     args = arguments.parse_args()
 
-    hue = 'response'
-    df = pd.read_csv(sys.stdin)
+    groups = (pd
+              .read_csv(sys.stdin)
+              .groupby('experiment', sort=False))
 
-    fig = plt.gcf()
+    nrows = groups.ngroups
+    (fig, axes) = plt.subplots(nrows=nrows, sharex=True)
     (width, height) = fig.get_size_inches()
-    fig.set_size_inches(width * 1.5, height)
+    fig.set_size_inches(width * 1.2, height * nrows)
 
+    first = 1
+    hue = 'response'
+    kwargs = {
+        'x': 'seconds',
+        'hue': hue,
+    }
     sns.set_palette('colorblind')
-    ax = sns.ecdfplot(
-        x='seconds',
-        hue=hue,
-        data=df,
-    )
-
-    ax.set_xlabel('Duration (sec)')
-
-    ax.grid(axis='both', which='major', alpha=0.3)
-    ax.grid(axis='both', which='minor', alpha=0.25, linestyle='dotted')
-
-    ax.xaxis.set_major_locator(MultipleLocator(base=2))
-    ax.xaxis.set_minor_locator(MultipleLocator())
-    ax.yaxis.set_major_locator(MultipleLocator(base=0.1))
-    ax.yaxis.set_minor_locator(AutoMinorLocator())
-
-    if args.cutoff is not None:
-        ax.set_xlim(0, args.cutoff)
-
-    view = df.groupby(hue).mean()
-    for l in lines(ax):
-        x = view.loc[l.name].item()
-        ax.axvline(
-            x=x,
-            linestyle='dashed',
-            color=l.color,
-            alpha=0.45,
+    for (i, (ax, (e, df))) in enumerate(zip(axes, groups), first):
+        sns.ecdfplot(
+            data=df,
+            ax=ax,
+            **kwargs,
         )
+
+        ax.set_xlabel('Duration (sec)' if i == nrows else '')
+        ax.set_title(
+            label=e,
+            loc='right',
+            fontdict={
+                'fontsize': 'medium',
+                'fontweight': 'bold',
+            },
+        )
+
+        ax.grid(axis='both', which='major', alpha=0.3)
+        ax.grid(axis='both', which='minor', alpha=0.25, linestyle='dotted')
+
+        ax.xaxis.set_major_locator(MultipleLocator(base=2))
+        ax.xaxis.set_minor_locator(MultipleLocator())
+        ax.yaxis.set_major_locator(MultipleLocator(base=0.1))
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+
+        if args.cutoff is not None:
+            ax.set_xlim(0, args.cutoff)
+
+        view = (df
+                .filter(items=kwargs.values())
+                .groupby(hue)
+                .mean())
+        for l in lines(ax):
+            x = view.loc[l.name].item()
+            ax.axvline(
+                x=x,
+                linestyle='dashed',
+                color=l.color,
+                alpha=0.45,
+            )
+        if i == first:
+            sns.move_legend(ax, 'best', title=None)
+        else:
+            ax.get_legend().remove()
 
     plt.savefig(args.output, bbox_inches='tight')
