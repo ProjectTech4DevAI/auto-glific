@@ -3,7 +3,7 @@ import functools as ft
 import collections as cl
 from pathlib import Path
 from argparse import ArgumentParser
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 import pandas as pd
 
@@ -49,14 +49,19 @@ class RemoteDataReader(DataReader):
 #
 #
 #
-def duration(start, end):
-    def calculate(x):
-        return (x[end]
-                .sub(x[start])
+@dataclass
+class DurationCalculator:
+    start: str
+    end: str
+
+    def __call__(self, x):
+        return (x[self.end]
+                .sub(x[self.start])
                 .apply(lambda y: y.total_seconds()))
 
-    return calculate
-
+#
+#
+#
 if __name__ == "__main__":
     arguments = ArgumentParser()
     arguments.add_argument('--sheet-id')
@@ -73,8 +78,8 @@ if __name__ == "__main__":
     }
     (full, summary) = ('full', 'summary')
     timings = cl.OrderedDict([
-        (full, duration(start, middle)),
-        (summary, duration(middle, end)),
+        (full, DurationCalculator(start, middle)),
+        (summary, DurationCalculator(middle, end)),
         ('total', lambda x: x[full].add(x[summary])),
     ])
 
