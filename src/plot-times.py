@@ -59,7 +59,6 @@ if __name__ == "__main__":
         'hue': hue,
     }
 
-    sns.set_palette('colorblind')
     for (i, (ax, (e, df))) in enumerate(zip(layout, groups), first):
         Logger.info(e)
 
@@ -100,7 +99,7 @@ if __name__ == "__main__":
                 x=x,
                 linestyle='dashed',
                 color=l.color,
-                alpha=0.45,
+                alpha=0.55,
             )
         if i == first:
             sns.move_legend(ax, 'best', title=None)
