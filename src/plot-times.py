@@ -102,7 +102,7 @@ if __name__ == "__main__":
                 alpha=0.55,
             )
         if i == first:
-            sns.move_legend(ax, 'best', title=None)
+            sns.move_legend(ax, 'best', title='Phase')
         else:
             ax.get_legend().remove()
 
