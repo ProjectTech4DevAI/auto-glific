@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
         ax.set_xlabel('Duration (sec)' if i == nrows else '')
         ax.set_title(
-            label=e,
+            label=f'{e} (N={len(df)})',
             loc='right',
             fontdict={
                 'fontsize': 'medium',
