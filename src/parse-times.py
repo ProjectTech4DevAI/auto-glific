@@ -86,7 +86,7 @@ if __name__ == "__main__":
     timings = cl.OrderedDict([
         (full, DurationCalculator(start, middle)),
         (summary, DurationCalculator(middle, end)),
-        ('total', lambda x: x[full].add(x[summary])),
+        ('total', DurationCalculator(start, end)),
     ])
 
     # read
